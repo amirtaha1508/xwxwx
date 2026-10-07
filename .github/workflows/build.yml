@@ -1,0 +1,77 @@
+name: Build APKs
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  user:
+    name: Build User App
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+      - name: Setup User Project
+        run: |
+          mkdir -p user_app
+          cd user_app
+          flutter create --org com.xwxwx --project-name user_app --platforms=android .
+          rm -rf lib
+          mkdir -p lib
+          cp ../lib/user.dart lib/main.dart
+          cp ../pubspec.yaml pubspec.yaml
+          cp ../google-services.json android/app/google-services.json
+          sed -i 's/applicationId "com.xwxwx.user_app"/applicationId "com.xwxwx.app"/' android/app/build.gradle
+          sed -i 's/namespace "com.xwxwx.user_app"/namespace "com.xwxwx.app"/' android/app/build.gradle
+      - name: Build User APK
+        run: |
+          cd user_app
+          flutter pub get
+          flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xwxwx-user-apk
+          path: user_app/build/app/outputs/flutter-apk/app-release.apk
+
+  admin:
+    name: Build Admin App
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+      - name: Setup Admin Project
+        run: |
+          mkdir -p admin_app
+          cd admin_app
+          flutter create --org com.xwxwx --project-name admin_app --platforms=android .
+          rm -rf lib
+          mkdir -p lib
+          cp ../lib/admin.dart lib/main.dart
+          cp ../pubspec.yaml pubspec.yaml
+          cp ../google-services-admin.json android/app/google-services.json
+          sed -i 's/applicationId "com.xwxwx.admin_app"/applicationId "com.xwxwx.admin"/' android/app/build.gradle
+          sed -i 's/namespace "com.xwxwx.admin_app"/namespace "com.xwxwx.admin"/' android/app/build.gradle
+      - name: Build Admin APK
+        run: |
+          cd admin_app
+          flutter pub get
+          flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xwxwx-admin-apk
+          path: admin_app/build/app/outputs/flutter-apk/app-release.apk
