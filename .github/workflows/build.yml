@@ -19,27 +19,36 @@ jobs:
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
+          cache: true
       - name: Setup User Project
         run: |
-          mkdir -p user_app
-          cd user_app
+          mkdir -p user_build
+          cd user_build
           flutter create --org com.xwxwx --project-name user_app --platforms=android .
           rm -rf lib
           mkdir -p lib
           cp ../lib/user.dart lib/main.dart
           cp ../pubspec.yaml pubspec.yaml
           cp ../google-services.json android/app/google-services.json
-          sed -i 's/applicationId "com.xwxwx.user_app"/applicationId "com.xwxwx.app"/' android/app/build.gradle
-          sed -i 's/namespace "com.xwxwx.user_app"/namespace "com.xwxwx.app"/' android/app/build.gradle
+          find . -type f \( -name "build.gradle" -o -name "build.gradle.kts" -o -name "MainActivity.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.user_app/com.xwxwx.app/g' {} \;
+          OLD_DIR="android/app/src/main/kotlin/com/xwxwx/user_app"
+          NEW_DIR="android/app/src/main/kotlin/com/xwxwx/app"
+          if [ -d "$OLD_DIR" ]; then
+            mkdir -p "$NEW_DIR"
+            mv "$OLD_DIR/MainActivity.kt" "$NEW_DIR/MainActivity.kt" 2>/dev/null || true
+            rm -rf "$OLD_DIR"
+          fi
+          sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml
+          sed -i 's|android:label="user_app"|android:label="XWXWX"|' android/app/src/main/AndroidManifest.xml
       - name: Build User APK
         run: |
-          cd user_app
+          cd user_build
           flutter pub get
           flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
           name: xwxwx-user-apk
-          path: user_app/build/app/outputs/flutter-apk/app-release.apk
+          path: user_build/build/app/outputs/flutter-apk/app-release.apk
 
   admin:
     name: Build Admin App
@@ -54,24 +63,33 @@ jobs:
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
+          cache: true
       - name: Setup Admin Project
         run: |
-          mkdir -p admin_app
-          cd admin_app
+          mkdir -p admin_build
+          cd admin_build
           flutter create --org com.xwxwx --project-name admin_app --platforms=android .
           rm -rf lib
           mkdir -p lib
           cp ../lib/admin.dart lib/main.dart
           cp ../pubspec.yaml pubspec.yaml
           cp ../google-services-admin.json android/app/google-services.json
-          sed -i 's/applicationId "com.xwxwx.admin_app"/applicationId "com.xwxwx.admin"/' android/app/build.gradle
-          sed -i 's/namespace "com.xwxwx.admin_app"/namespace "com.xwxwx.admin"/' android/app/build.gradle
+          find . -type f \( -name "build.gradle" -o -name "build.gradle.kts" -o -name "MainActivity.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.admin_app/com.xwxwx.admin/g' {} \;
+          OLD_DIR="android/app/src/main/kotlin/com/xwxwx/admin_app"
+          NEW_DIR="android/app/src/main/kotlin/com/xwxwx/admin"
+          if [ -d "$OLD_DIR" ]; then
+            mkdir -p "$NEW_DIR"
+            mv "$OLD_DIR/MainActivity.kt" "$NEW_DIR/MainActivity.kt" 2>/dev/null || true
+            rm -rf "$OLD_DIR"
+          fi
+          sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml
+          sed -i 's|android:label="admin_app"|android:label="XWXWX Admin"|' android/app/src/main/AndroidManifest.xml
       - name: Build Admin APK
         run: |
-          cd admin_app
+          cd admin_build
           flutter pub get
           flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
           name: xwxwx-admin-apk
-          path: admin_app/build/app/outputs/flutter-apk/app-release.apk
+          path: admin_build/build/app/outputs/flutter-apk/app-release.apk
