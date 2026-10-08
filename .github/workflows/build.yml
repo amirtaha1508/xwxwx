@@ -39,6 +39,24 @@ jobs:
           cp ../pubspec.yaml pubspec.yaml
 
           cd android
+
+          # --- Fix Kotlin version (Groovy) ---
+          if [ -f build.gradle ]; then
+            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" build.gradle
+            if ! grep -q "kotlin_version" build.gradle; then
+              sed -i "s|buildscript {|buildscript {\n    ext.kotlin_version = '1.9.24'|" build.gradle
+            fi
+          fi
+
+          # --- Fix Kotlin version (KTS) ---
+          if [ -f settings.gradle.kts ]; then
+            sed -i 's|id("org.jetbrains.kotlin.android") version ".*"|id("org.jetbrains.kotlin.android") version "1.9.24"|' settings.gradle.kts
+          fi
+          if [ -f build.gradle.kts ]; then
+            sed -i 's|id("org.jetbrains.kotlin.android") version ".*"|id("org.jetbrains.kotlin.android") version "1.9.24"|' build.gradle.kts
+          fi
+
+          # --- Fix package name ---
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.user_app/com.xwxwx.app/g' {} \;
 
           OLD="app/src/main/kotlin/com/xwxwx/user_app"
@@ -51,12 +69,13 @@ jobs:
             rm -rf "$OLD"
           fi
 
+          # --- Fix Manifest ---
           MANIFEST="app/src/main/AndroidManifest.xml"
           if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
             sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
           fi
           if ! grep -q "READ_MEDIA_IMAGES" "$MANIFEST"; then
-            sed -i 's|<application|<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>\n    <application|' "$MANIFEST"
+            sed -i 's|<application|<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>\n    <application|' "$MANIFEST"
           fi
           sed -i 's|android:label="user_app"|android:label="XWXWX"|' "$MANIFEST"
 
@@ -80,6 +99,24 @@ jobs:
           cp ../pubspec.yaml pubspec.yaml
 
           cd android
+
+          # --- Fix Kotlin version (Groovy) ---
+          if [ -f build.gradle ]; then
+            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" build.gradle
+            if ! grep -q "kotlin_version" build.gradle; then
+              sed -i "s|buildscript {|buildscript {\n    ext.kotlin_version = '1.9.24'|" build.gradle
+            fi
+          fi
+
+          # --- Fix Kotlin version (KTS) ---
+          if [ -f settings.gradle.kts ]; then
+            sed -i 's|id("org.jetbrains.kotlin.android") version ".*"|id("org.jetbrains.kotlin.android") version "1.9.24"|' settings.gradle.kts
+          fi
+          if [ -f build.gradle.kts ]; then
+            sed -i 's|id("org.jetbrains.kotlin.android") version ".*"|id("org.jetbrains.kotlin.android") version "1.9.24"|' build.gradle.kts
+          fi
+
+          # --- Fix package name ---
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.admin_app/com.xwxwx.admin/g' {} \;
 
           OLD="app/src/main/kotlin/com/xwxwx/admin_app"
@@ -92,6 +129,7 @@ jobs:
             rm -rf "$OLD"
           fi
 
+          # --- Fix Manifest ---
           MANIFEST="app/src/main/AndroidManifest.xml"
           if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
             sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
