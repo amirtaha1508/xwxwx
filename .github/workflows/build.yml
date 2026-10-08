@@ -28,9 +28,10 @@ jobs:
       
       - name: Build User APK
         run: |
-          set -e
-          mkdir -p b_user && cd b_user
-          flutter create --org com.xwxwx --project-name user_app --platforms=android . 2>&1 | tail -3
+          mkdir -p b_user
+          cd b_user
+          
+          flutter create --org com.xwxwx --project-name user_app --platforms=android . 2>&1 | tail -2
           
           rm -rf lib && mkdir -p lib
           cp ../lib/user.dart lib/main.dart
@@ -38,18 +39,32 @@ jobs:
           cp ../google-services.json android/app/google-services.json
           
           cd android
-          echo "=== Files ==="
+          echo "=== android/ ==="
           ls -la
+          echo "=== android/app/ ==="
+          ls -la app/
+          echo "=== manifest ==="
+          ls -la app/src/main/
           
           SETTINGS=""
           if [ -f settings.gradle.kts ]; then SETTINGS="settings.gradle.kts"; fi
           if [ -f settings.gradle ]; then SETTINGS="settings.gradle"; fi
-          echo "SETTINGS=$SETTINGS"
           
           APP_BUILD=""
           if [ -f app/build.gradle.kts ]; then APP_BUILD="app/build.gradle.kts"; fi
           if [ -f app/build.gradle ]; then APP_BUILD="app/build.gradle"; fi
+          
+          MANIFEST="app/src/main/AndroidManifest.xml"
+          
+          echo "SETTINGS=$SETTINGS"
           echo "APP_BUILD=$APP_BUILD"
+          echo "MANIFEST=$MANIFEST"
+          
+          if [ ! -f "$MANIFEST" ]; then
+            echo "ERROR: Manifest not found!"
+            find . -name "AndroidManifest.xml"
+            exit 1
+          fi
           
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.user_app/com.xwxwx.app/g' {} \;
           
@@ -69,34 +84,41 @@ jobs:
             fi
           fi
           
-          cd ..
-          
-          OLD="app/src/main/kotlin/com/xwxwx/user_app"
-          NEW="app/src/main/kotlin/com/xwxwx/app"
-          if [ -d "$OLD" ]; then
-            mkdir -p "$NEW"
-            if [ -f "$OLD/MainActivity.kt" ]; then mv "$OLD/MainActivity.kt" "$NEW/"; fi
-            rm -rf "$OLD"
+          OLD_DIR="app/src/main/kotlin/com/xwxwx/user_app"
+          NEW_DIR="app/src/main/kotlin/com/xwxwx/app"
+          if [ -d "$OLD_DIR" ]; then
+            mkdir -p "$NEW_DIR"
+            if [ -f "$OLD_DIR/MainActivity.kt" ]; then
+              mv "$OLD_DIR/MainActivity.kt" "$NEW_DIR/MainActivity.kt"
+            fi
+            rm -rf "$OLD_DIR"
           fi
           
-          MANIFEST="app/src/main/AndroidManifest.xml"
           if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
             sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
           fi
           sed -i 's|android:label="user_app"|android:label="XWXWX"|' "$MANIFEST"
           
+          echo "=== After edits ==="
+          grep "google-services" "$SETTINGS" || true
+          grep "google-services" "$APP_BUILD" || true
+          grep "INTERNET" "$MANIFEST" || true
+          
           cd ..
+          flutter clean
           flutter pub get
           flutter build apk --release
-          cp build/app/outputs/flutter-apk/app-release.apk ../XWXWX-User.apk
+          
           cd ..
+          cp b_user/build/app/outputs/flutter-apk/app-release.apk XWXWX-User.apk
           ls -la XWXWX-User.apk
       
       - name: Build Admin APK
         run: |
-          set -e
-          mkdir -p b_admin && cd b_admin
-          flutter create --org com.xwxwx --project-name admin_app --platforms=android . 2>&1 | tail -3
+          mkdir -p b_admin
+          cd b_admin
+          
+          flutter create --org com.xwxwx --project-name admin_app --platforms=android . 2>&1 | tail -2
           
           rm -rf lib && mkdir -p lib
           cp ../lib/admin.dart lib/main.dart
@@ -112,6 +134,14 @@ jobs:
           APP_BUILD=""
           if [ -f app/build.gradle.kts ]; then APP_BUILD="app/build.gradle.kts"; fi
           if [ -f app/build.gradle ]; then APP_BUILD="app/build.gradle"; fi
+          
+          MANIFEST="app/src/main/AndroidManifest.xml"
+          
+          if [ ! -f "$MANIFEST" ]; then
+            echo "ERROR: Manifest not found!"
+            find . -name "AndroidManifest.xml"
+            exit 1
+          fi
           
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.admin_app/com.xwxwx.admin/g' {} \;
           
@@ -131,27 +161,28 @@ jobs:
             fi
           fi
           
-          cd ..
-          
-          OLD="app/src/main/kotlin/com/xwxwx/admin_app"
-          NEW="app/src/main/kotlin/com/xwxwx/admin"
-          if [ -d "$OLD" ]; then
-            mkdir -p "$NEW"
-            if [ -f "$OLD/MainActivity.kt" ]; then mv "$OLD/MainActivity.kt" "$NEW/"; fi
-            rm -rf "$OLD"
+          OLD_DIR="app/src/main/kotlin/com/xwxwx/admin_app"
+          NEW_DIR="app/src/main/kotlin/com/xwxwx/admin"
+          if [ -d "$OLD_DIR" ]; then
+            mkdir -p "$NEW_DIR"
+            if [ -f "$OLD_DIR/MainActivity.kt" ]; then
+              mv "$OLD_DIR/MainActivity.kt" "$NEW_DIR/MainActivity.kt"
+            fi
+            rm -rf "$OLD_DIR"
           fi
           
-          MANIFEST="app/src/main/AndroidManifest.xml"
           if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
             sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
           fi
           sed -i 's|android:label="admin_app"|android:label="XWXWX Admin"|' "$MANIFEST"
           
           cd ..
+          flutter clean
           flutter pub get
           flutter build apk --release
-          cp build/app/outputs/flutter-apk/app-release.apk ../XWXWX-Admin.apk
+          
           cd ..
+          cp b_admin/build/app/outputs/flutter-apk/app-release.apk XWXWX-Admin.apk
           ls -la XWXWX-Admin.apk
       
       - name: Create Release
