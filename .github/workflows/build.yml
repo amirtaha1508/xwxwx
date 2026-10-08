@@ -22,7 +22,7 @@ jobs:
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
-          cache: true
+          cache: false
       - name: Build
         run: |
           mkdir -p b_user && cd b_user
@@ -32,13 +32,8 @@ jobs:
           cp ../lib/firebase_options.dart lib/firebase_options.dart
           cp ../pubspec.yaml pubspec.yaml
           cd android
-          for f in settings.gradle settings.gradle.kts build.gradle build.gradle.kts; do
-            if [ -f "$f" ]; then
-              sed -i 's|org.jetbrains.kotlin.android" version ".*"|org.jetbrains.kotlin.android" version "1.9.22"|g' "$f"
-              sed -i "s|org.jetbrains.kotlin.android' version '.*'|org.jetbrains.kotlin.android' version '1.9.22'|g" "$f"
-              sed -i "s|ext.kotlin_version = .*|ext.kotlin_version = '1.9.22'|g" "$f"
-            fi
-          done
+          sed -i "s|<latest-version>|1.9.22|g" build.gradle 2>/dev/null || true
+          sed -i "s|<latest-version>|1.9.22|g" build.gradle.kts 2>/dev/null || true
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.user_app/com.xwxwx.app/g' {} \;
           OLD="app/src/main/kotlin/com/xwxwx/user_app"
           NEW="app/src/main/kotlin/com/xwxwx/app"
@@ -74,7 +69,7 @@ jobs:
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
-          cache: true
+          cache: false
       - name: Build
         run: |
           mkdir -p b_admin && cd b_admin
@@ -84,13 +79,8 @@ jobs:
           cp ../lib/firebase_options.dart lib/firebase_options.dart
           cp ../pubspec.yaml pubspec.yaml
           cd android
-          for f in settings.gradle settings.gradle.kts build.gradle build.gradle.kts; do
-            if [ -f "$f" ]; then
-              sed -i 's|org.jetbrains.kotlin.android" version ".*"|org.jetbrains.kotlin.android" version "1.9.22"|g' "$f"
-              sed -i "s|org.jetbrains.kotlin.android' version '.*'|org.jetbrains.kotlin.android' version '1.9.22'|g" "$f"
-              sed -i "s|ext.kotlin_version = .*|ext.kotlin_version = '1.9.22'|g" "$f"
-            fi
-          done
+          sed -i "s|<latest-version>|1.9.22|g" build.gradle 2>/dev/null || true
+          sed -i "s|<latest-version>|1.9.22|g" build.gradle.kts 2>/dev/null || true
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.admin_app/com.xwxwx.admin/g' {} \;
           OLD="app/src/main/kotlin/com/xwxwx/admin_app"
           NEW="app/src/main/kotlin/com/xwxwx/admin"
