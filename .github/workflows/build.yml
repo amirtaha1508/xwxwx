@@ -5,11 +5,8 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  build_user:
+  user:
     name: Build User APK
     runs-on: ubuntu-latest
     steps:
@@ -20,58 +17,28 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.16.0'
           channel: 'stable'
-          cache: false
-      - name: Build
+      - name: Build User
         run: |
-          mkdir -p b_user && cd b_user
-          flutter create --org com.xwxwx --project-name user_app --platforms=android . 2>&1 | tail -3
-          rm -rf lib && mkdir -p lib
+          flutter create --org com.xwxwx --project-name app user_app
+          cd user_app
+          rm -rf lib && mkdir lib
           cp ../lib/user.dart lib/main.dart
           cp ../lib/firebase_options.dart lib/firebase_options.dart
           cp ../pubspec.yaml pubspec.yaml
-          cd android
-          python3 - <<'PYEOF'
-import re, os
-for path in ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'app/build.gradle', 'app/build.gradle.kts']:
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            c = f.read()
-        c = c.replace('<latest-version>', '1.9.22')
-        c = re.sub(r"ext\.kotlin_version\s*=\s*['\"].*?['\"]", "ext.kotlin_version = '1.9.22'", c)
-        c = re.sub(r'id\s*\(\s*["\']org\.jetbrains\.kotlin\.android["\']\s*\)\s*version\s*["\'].*?["\']', 'id("org.jetbrains.kotlin.android") version "1.9.22"', c)
-        c = re.sub(r"id\s*['\"]org\.jetbrains\.kotlin\.android['\"]\s*version\s*['\"].*?['\"]", "id 'org.jetbrains.kotlin.android' version '1.9.22'", c)
-        with open(path, 'w') as f:
-            f.write(c)
-        print(f'=== {path} ===')
-        for line in c.split('\n'):
-            if 'kotlin' in line.lower():
-                print(line)
-PYEOF
-          find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.user_app/com.xwxwx.app/g' {} \;
-          OLD="app/src/main/kotlin/com/xwxwx/user_app"
-          NEW="app/src/main/kotlin/com/xwxwx/app"
-          if [ -d "$OLD" ]; then
-            mkdir -p "$NEW"
-            [ -f "$OLD/MainActivity.kt" ] && mv "$OLD/MainActivity.kt" "$NEW/"
-            rm -rf "$OLD"
-          fi
-          MANIFEST="app/src/main/AndroidManifest.xml"
-          grep -q "android.permission.INTERNET" "$MANIFEST" || sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
-          grep -q "READ_MEDIA_IMAGES" "$MANIFEST" || sed -i 's|<application|<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>\n    <application|' "$MANIFEST"
-          sed -i 's|android:label="user_app"|android:label="XWXWX"|' "$MANIFEST"
-          cd ..
+          cp ../google-services.json android/app/google-services.json
+          sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml
+          sed -i 's|android:label="app"|android:label="XWXWX"|' android/app/src/main/AndroidManifest.xml
           flutter pub get
           flutter build apk --release
-          cd ..
-          cp b_user/build/app/outputs/flutter-apk/app-release.apk XWXWX-User.apk
+          cp build/app/outputs/flutter-apk/app-release.apk ../XWXWX-User.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: XWXWX-User-apk
+          name: XWXWX-User
           path: XWXWX-User.apk
 
-  build_admin:
+  admin:
     name: Build Admin APK
     runs-on: ubuntu-latest
     steps:
@@ -82,73 +49,23 @@ PYEOF
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.16.0'
           channel: 'stable'
-          cache: false
-      - name: Build
+      - name: Build Admin
         run: |
-          mkdir -p b_admin && cd b_admin
-          flutter create --org com.xwxwx --project-name admin_app --platforms=android . 2>&1 | tail -3
-          rm -rf lib && mkdir -p lib
+          flutter create --org com.xwxwx --project-name admin admin_app
+          cd admin_app
+          rm -rf lib && mkdir lib
           cp ../lib/admin.dart lib/main.dart
           cp ../lib/firebase_options.dart lib/firebase_options.dart
           cp ../pubspec.yaml pubspec.yaml
-          cd android
-          python3 - <<'PYEOF'
-import re, os
-for path in ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'app/build.gradle', 'app/build.gradle.kts']:
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            c = f.read()
-        c = c.replace('<latest-version>', '1.9.22')
-        c = re.sub(r"ext\.kotlin_version\s*=\s*['\"].*?['\"]", "ext.kotlin_version = '1.9.22'", c)
-        c = re.sub(r'id\s*\(\s*["\']org\.jetbrains\.kotlin\.android["\']\s*\)\s*version\s*["\'].*?["\']', 'id("org.jetbrains.kotlin.android") version "1.9.22"', c)
-        c = re.sub(r"id\s*['\"]org\.jetbrains\.kotlin\.android['\"]\s*version\s*['\"].*?['\"]", "id 'org.jetbrains.kotlin.android' version '1.9.22'", c)
-        with open(path, 'w') as f:
-            f.write(c)
-        print(f'=== {path} ===')
-        for line in c.split('\n'):
-            if 'kotlin' in line.lower():
-                print(line)
-PYEOF
-          find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.admin_app/com.xwxwx.admin/g' {} \;
-          OLD="app/src/main/kotlin/com/xwxwx/admin_app"
-          NEW="app/src/main/kotlin/com/xwxwx/admin"
-          if [ -d "$OLD" ]; then
-            mkdir -p "$NEW"
-            [ -f "$OLD/MainActivity.kt" ] && mv "$OLD/MainActivity.kt" "$NEW/"
-            rm -rf "$OLD"
-          fi
-          MANIFEST="app/src/main/AndroidManifest.xml"
-          grep -q "android.permission.INTERNET" "$MANIFEST" || sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
-          sed -i 's|android:label="admin_app"|android:label="XWXWX Admin"|' "$MANIFEST"
-          cd ..
+          cp ../google-services-admin.json android/app/google-services.json
+          sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml
+          sed -i 's|android:label="admin"|android:label="XWXWX Admin"|' android/app/src/main/AndroidManifest.xml
           flutter pub get
           flutter build apk --release
-          cd ..
-          cp b_admin/build/app/outputs/flutter-apk/app-release.apk XWXWX-Admin.apk
+          cp build/app/outputs/flutter-apk/app-release.apk ../XWXWX-Admin.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: XWXWX-Admin-apk
+          name: XWXWX-Admin
           path: XWXWX-Admin.apk
-
-  release:
-    name: Create Release
-    needs: [build_user, build_admin]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: XWXWX-User-apk
-      - uses: actions/download-artifact@v4
-        with:
-          name: XWXWX-Admin-apk
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Release v1.0.${{ github.run_number }}
-          files: |
-            XWXWX-User.apk
-            XWXWX-Admin.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
