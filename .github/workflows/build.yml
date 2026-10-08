@@ -20,7 +20,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.22.0'
           channel: 'stable'
           cache: false
       - name: Build
@@ -32,8 +32,22 @@ jobs:
           cp ../lib/firebase_options.dart lib/firebase_options.dart
           cp ../pubspec.yaml pubspec.yaml
           cd android
-          sed -i "s|<latest-version>|1.9.22|g" build.gradle 2>/dev/null || true
-          sed -i "s|<latest-version>|1.9.22|g" build.gradle.kts 2>/dev/null || true
+          python3 - <<'PYEOF'
+import re, os
+for path in ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts']:
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            c = f.read()
+        c = c.replace('<latest-version>', '1.9.22')
+        c = re.sub(r"ext\.kotlin_version\s*=\s*['\"].*?['\"]", "ext.kotlin_version = '1.9.22'", c)
+        c = re.sub(r'org\.jetbrains\.kotlin\.android"?\s+version\s+["\'].*?["\']', 'org.jetbrains.kotlin.android" version "1.9.22"', c)
+        with open(path, 'w') as f:
+            f.write(c)
+        print(f'--- {path} ---')
+        for line in c.split('\n')[:15]:
+            if 'kotlin' in line.lower():
+                print(line)
+PYEOF
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.user_app/com.xwxwx.app/g' {} \;
           OLD="app/src/main/kotlin/com/xwxwx/user_app"
           NEW="app/src/main/kotlin/com/xwxwx/app"
@@ -67,7 +81,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.22.0'
           channel: 'stable'
           cache: false
       - name: Build
@@ -79,8 +93,22 @@ jobs:
           cp ../lib/firebase_options.dart lib/firebase_options.dart
           cp ../pubspec.yaml pubspec.yaml
           cd android
-          sed -i "s|<latest-version>|1.9.22|g" build.gradle 2>/dev/null || true
-          sed -i "s|<latest-version>|1.9.22|g" build.gradle.kts 2>/dev/null || true
+          python3 - <<'PYEOF'
+import re, os
+for path in ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts']:
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            c = f.read()
+        c = c.replace('<latest-version>', '1.9.22')
+        c = re.sub(r"ext\.kotlin_version\s*=\s*['\"].*?['\"]", "ext.kotlin_version = '1.9.22'", c)
+        c = re.sub(r'org\.jetbrains\.kotlin\.android"?\s+version\s+["\'].*?["\']', 'org.jetbrains.kotlin.android" version "1.9.22"', c)
+        with open(path, 'w') as f:
+            f.write(c)
+        print(f'--- {path} ---')
+        for line in c.split('\n')[:15]:
+            if 'kotlin' in line.lower():
+                print(line)
+PYEOF
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.admin_app/com.xwxwx.admin/g' {} \;
           OLD="app/src/main/kotlin/com/xwxwx/admin_app"
           NEW="app/src/main/kotlin/com/xwxwx/admin"
