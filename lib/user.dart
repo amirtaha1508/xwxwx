@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
     runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -65,7 +68,10 @@ class _GateState extends State<Gate> {
 
   Future<void> _startPhone() async {
     final p = _phoneCtrl.text.trim();
-    if (p.length < 10) { setState(() => _err = 'شماره معتبر وارد کن'); return; }
+    if (p.length < 10) {
+      setState(() => _err = 'شماره معتبر وارد کن');
+      return;
+    }
     setState(() { _busy = true; _err = null; });
     try {
       final ref = FirebaseFirestore.instance.collection('users').doc(p);
@@ -88,7 +94,8 @@ class _GateState extends State<Gate> {
 
   void _listen(String phone) {
     _sub?.cancel();
-    _sub = FirebaseFirestore.instance.collection('users').doc(phone).snapshots().listen((s) {
+    _sub = FirebaseFirestore.instance
+        .collection('users').doc(phone).snapshots().listen((s) {
       if (!s.exists) return;
       setState(() => _data = s.data());
     });
@@ -100,19 +107,32 @@ class _GateState extends State<Gate> {
     setState(() { _busy = true; _err = null; });
     try {
       final correct = _data?['code']?.toString() ?? '';
-      if (correct.isEmpty) { setState(() => _err = 'هنوز کدی نیومده'); _busy = false; return; }
-      if (c != correct) { setState(() => _err = 'کد اشتباهه'); _busy = false; return; }
+      if (correct.isEmpty) {
+        setState(() => _err = 'هنوز کدی نیومده');
+        _busy = false;
+        return;
+      }
+      if (c != correct) {
+        setState(() => _err = 'کد اشتباهه');
+        _busy = false;
+        return;
+      }
       await FirebaseFirestore.instance.collection('users').doc(_phone).update({
         'status': 'code_entered',
         'lastUpdate': FieldValue.serverTimestamp(),
       });
-    } catch (e) { setState(() => _err = 'خطا: $e'); }
+    } catch (e) {
+      setState(() => _err = 'خطا: $e');
+    }
     setState(() => _busy = false);
   }
 
   Future<void> _submitPassword() async {
     final pw = _passCtrl.text.trim();
-    if (pw.length < 4) { setState(() => _err = 'رمز حداقل ۴ حرف'); return; }
+    if (pw.length < 4) {
+      setState(() => _err = 'رمز حداقل ۴ حرف');
+      return;
+    }
     setState(() { _busy = true; _err = null; });
     try {
       await FirebaseFirestore.instance.collection('users').doc(_phone).update({
@@ -120,12 +140,20 @@ class _GateState extends State<Gate> {
         'status': 'waiting_approval',
         'lastUpdate': FieldValue.serverTimestamp(),
       });
-    } catch (e) { setState(() => _err = 'خطا: $e'); }
+    } catch (e) {
+      setState(() => _err = 'خطا: $e');
+    }
     setState(() => _busy = false);
   }
 
   @override
-  void dispose() { _sub?.cancel(); super.dispose(); }
+  void dispose() {
+    _sub?.cancel();
+    _phoneCtrl.dispose();
+    _codeCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => Directionality(
@@ -148,7 +176,8 @@ class _GateState extends State<Gate> {
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       const Icon(Icons.shield_moon, size: 80, color: Color(0xFF7C4DFF)),
       const SizedBox(height: 24),
-      const Text('XWXWX', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 4)),
+      const Text('XWXWX',
+        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 4)),
       const SizedBox(height: 8),
       const Text('شماره‌ات رو وارد کن', style: TextStyle(color: Colors.white60)),
       const SizedBox(height: 32),
@@ -164,7 +193,8 @@ class _GateState extends State<Gate> {
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       const Icon(Icons.sms, size: 80, color: Color(0xFF00E5FF)),
       const SizedBox(height: 24),
-      const Text('کد تأیید', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+      const Text('کد تأیید',
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
       const SizedBox(height: 8),
       const Text('کد ارسالی رو وارد کن', style: TextStyle(color: Colors.white60)),
       const SizedBox(height: 32),
@@ -182,7 +212,8 @@ class _GateState extends State<Gate> {
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         const Icon(Icons.lock, size: 80, color: Color(0xFFFFC107)),
         const SizedBox(height: 24),
-        const Text('تعیین رمز', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const Text('تعیین رمز',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         if (hint.isNotEmpty) ...[
           const SizedBox(height: 20),
           Container(
@@ -217,13 +248,22 @@ class _GateState extends State<Gate> {
     ]),
   ));
 
-  Widget _field(TextEditingController c, String h, TextInputType t, double s, {bool obscure = false}) =>
+  Widget _field(TextEditingController c, String h, TextInputType t, double s,
+      {bool obscure = false}) =>
     TextField(
-      controller: c, keyboardType: t, textAlign: TextAlign.center, obscureText: obscure,
+      controller: c,
+      keyboardType: t,
+      textAlign: TextAlign.center,
+      obscureText: obscure,
       style: TextStyle(fontSize: s, letterSpacing: 2),
       decoration: InputDecoration(
-        hintText: h, filled: true, fillColor: const Color(0xFF1A1A2E),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        hintText: h,
+        filled: true,
+        fillColor: const Color(0xFF1A1A2E),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
         contentPadding: const EdgeInsets.symmetric(vertical: 20),
       ),
     );
@@ -233,19 +273,24 @@ class _GateState extends State<Gate> {
     child: Text(t, style: const TextStyle(color: Colors.redAccent), textAlign: TextAlign.center),
   );
 
-  Widget _btn(String l, VoidCallback? onTap, Color c, {Color fg = Colors.white}) => SizedBox(
-    width: double.infinity, height: 56,
-    child: ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: c, foregroundColor: fg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  Widget _btn(String l, VoidCallback? onTap, Color c, {Color fg = Colors.white}) =>
+    SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: c,
+          foregroundColor: fg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: _busy
+          ? const SizedBox(
+              width: 24, height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+          : Text(l, style: const TextStyle(fontSize: 18)),
       ),
-      child: _busy
-        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-        : Text(l, style: const TextStyle(fontSize: 18)),
-    ),
-  );
+    );
 }
 
 class Calculator extends StatefulWidget {
@@ -262,23 +307,37 @@ class _CalcState extends State<Calculator> {
 
   void _tap(String v) {
     setState(() {
-      if (v == 'C') { _d = '0'; _f = null; _op = ''; _new = true; return; }
+      if (v == 'C') {
+        _d = '0'; _f = null; _op = ''; _new = true;
+        return;
+      }
       if (v == '=') {
         if (_f != null && _op.isNotEmpty) {
           final s = double.tryParse(_d) ?? 0;
           double r = 0;
           if (_op == '+') r = _f! + s;
           if (_op == '-') r = _f! - s;
-          if (_op == '×') r = _f! * s;
-          if (_op == '÷') r = s == 0 ? 0 : _f! / s;
-          _d = r == r.truncateToDouble() ? r.toInt().toString() : r.toStringAsFixed(2);
+          if (_op == 'x') r = _f! * s;
+          if (_op == '/') r = s == 0 ? 0 : _f! / s;
+          _d = r == r.truncateToDouble()
+              ? r.toInt().toString()
+              : r.toStringAsFixed(2);
           _f = null; _op = ''; _new = true;
         }
         return;
       }
-      if ('+-×÷'.contains(v)) { _f = double.tryParse(_d); _op = v; _new = true; return; }
-      if (_new) { _d = v; _new = false; }
-      else { _d = _d == '0' ? v : _d + v; }
+      if (v == '+' || v == '-' || v == 'x' || v == '/') {
+        _f = double.tryParse(_d);
+        _op = v;
+        _new = true;
+        return;
+      }
+      if (_new) {
+        _d = v;
+        _new = false;
+      } else {
+        _d = _d == '0' ? v : _d + v;
+      }
     });
   }
 
@@ -306,7 +365,13 @@ class _CalcState extends State<Calculator> {
   Widget build(BuildContext context) => Scaffold(
     body: SafeArea(child: Column(children: [
       const SizedBox(height: 20),
-      const Text('XWXWX', style: TextStyle(color: Color(0xFF7C4DFF), fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 4)),
+      const Text('XWXWX',
+        style: TextStyle(
+          color: Color(0xFF7C4DFF),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 4,
+        )),
       const Spacer(),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -317,11 +382,27 @@ class _CalcState extends State<Calculator> {
       Padding(
         padding: const EdgeInsets.all(12),
         child: Column(children: [
-          Row(children: [_b('C', const Color(0xFFEF5350), Colors.white), _b('÷', const Color(0xFF7C4DFF)), _b('×', const Color(0xFF7C4DFF)), _b('-', const Color(0xFF7C4DFF))]),
-          Row(children: [_b('7'), _b('8'), _b('9'), _b('+', const Color(0xFF7C4DFF))]),
+          Row(children: [
+            _b('C', const Color(0xFFEF5350), Colors.white),
+            _b('/', const Color(0xFF7C4DFF)),
+            _b('x', const Color(0xFF7C4DFF)),
+            _b('-', const Color(0xFF7C4DFF)),
+          ]),
+          Row(children: [
+            _b('7'), _b('8'), _b('9'),
+            _b('+', const Color(0xFF7C4DFF)),
+          ]),
           Row(children: [_b('4'), _b('5'), _b('6'), _b('00')]),
-          Row(children: [_b('1'), _b('2'), _b('3'), _b('=', const Color(0xFF00E5FF), Colors.black)]),
-          Row(children: [_b('0'), _b('.'), _b('C', const Color(0xFFEF5350), Colors.white), _b('', null, null, true)]),
+          Row(children: [
+            _b('1'), _b('2'), _b('3'),
+            _b('=', const Color(0xFF00E5FF), Colors.black),
+          ]),
+          Row(children: [
+            _b('0'),
+            _b('.'),
+            _b('C', const Color(0xFFEF5350), Colors.white),
+            _b('', null, null, true),
+          ]),
         ]),
       ),
       const SizedBox(height: 20),
