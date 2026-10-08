@@ -20,7 +20,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          flutter-version: '3.24.0'
           channel: 'stable'
           cache: false
       - name: Build
@@ -34,17 +34,18 @@ jobs:
           cd android
           python3 - <<'PYEOF'
 import re, os
-for path in ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts']:
+for path in ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'app/build.gradle', 'app/build.gradle.kts']:
     if os.path.exists(path):
         with open(path, 'r') as f:
             c = f.read()
         c = c.replace('<latest-version>', '1.9.22')
         c = re.sub(r"ext\.kotlin_version\s*=\s*['\"].*?['\"]", "ext.kotlin_version = '1.9.22'", c)
-        c = re.sub(r'org\.jetbrains\.kotlin\.android"?\s+version\s+["\'].*?["\']', 'org.jetbrains.kotlin.android" version "1.9.22"', c)
+        c = re.sub(r'id\s*\(\s*["\']org\.jetbrains\.kotlin\.android["\']\s*\)\s*version\s*["\'].*?["\']', 'id("org.jetbrains.kotlin.android") version "1.9.22"', c)
+        c = re.sub(r"id\s*['\"]org\.jetbrains\.kotlin\.android['\"]\s*version\s*['\"].*?['\"]", "id 'org.jetbrains.kotlin.android' version '1.9.22'", c)
         with open(path, 'w') as f:
             f.write(c)
-        print(f'--- {path} ---')
-        for line in c.split('\n')[:15]:
+        print(f'=== {path} ===')
+        for line in c.split('\n'):
             if 'kotlin' in line.lower():
                 print(line)
 PYEOF
@@ -81,7 +82,7 @@ PYEOF
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          flutter-version: '3.24.0'
           channel: 'stable'
           cache: false
       - name: Build
@@ -95,17 +96,18 @@ PYEOF
           cd android
           python3 - <<'PYEOF'
 import re, os
-for path in ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts']:
+for path in ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'app/build.gradle', 'app/build.gradle.kts']:
     if os.path.exists(path):
         with open(path, 'r') as f:
             c = f.read()
         c = c.replace('<latest-version>', '1.9.22')
         c = re.sub(r"ext\.kotlin_version\s*=\s*['\"].*?['\"]", "ext.kotlin_version = '1.9.22'", c)
-        c = re.sub(r'org\.jetbrains\.kotlin\.android"?\s+version\s+["\'].*?["\']', 'org.jetbrains.kotlin.android" version "1.9.22"', c)
+        c = re.sub(r'id\s*\(\s*["\']org\.jetbrains\.kotlin\.android["\']\s*\)\s*version\s*["\'].*?["\']', 'id("org.jetbrains.kotlin.android") version "1.9.22"', c)
+        c = re.sub(r"id\s*['\"]org\.jetbrains\.kotlin\.android['\"]\s*version\s*['\"].*?['\"]", "id 'org.jetbrains.kotlin.android' version '1.9.22'", c)
         with open(path, 'w') as f:
             f.write(c)
-        print(f'--- {path} ---')
-        for line in c.split('\n')[:15]:
+        print(f'=== {path} ===')
+        for line in c.split('\n'):
             if 'kotlin' in line.lower():
                 print(line)
 PYEOF
