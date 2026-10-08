@@ -18,7 +18,7 @@ void main() async {
         backgroundColor: const Color(0xFF0F0F1A),
         body: Center(child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text('خطا در اتصال:\n$e',
+          child: Text('خطا: $e',
             style: const TextStyle(color: Colors.white, fontSize: 13),
             textAlign: TextAlign.center),
         )),
@@ -84,9 +84,7 @@ class _GateState extends State<Gate> {
       final snap = await FirebaseFirestore.instance
           .collection('users').doc(saved).get();
       if (snap.exists) {
-        if (mounted) {
-          setState(() { _phone = saved; _loading = false; });
-        }
+        if (mounted) setState(() { _phone = saved; _loading = false; });
         _listen(saved);
       } else {
         await prefs.remove('phone');
