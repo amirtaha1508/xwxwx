@@ -5,7 +5,25 @@ import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    runApp(MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: const Color(0xFF0F0F1A),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('خطا در اتصال:\n$e',
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              textAlign: TextAlign.center),
+          ),
+        ),
+      ),
+    ));
+    return;
+  }
   runApp(const App());
 }
 
@@ -121,6 +139,7 @@ class _GateState extends State<Gate> {
     if (st == 'active') return const Calculator();
     if (st == 'waiting_password') return _passUI();
     if (st == 'waiting_approval') return _waitUI('منتظر تأیید ادمین...');
+    if (st == 'blocked') return _waitUI('دسترسی شما بسته شده');
     return _codeUI();
   }
 
@@ -249,7 +268,7 @@ class _CalcState extends State<Calculator> {
           final s = double.tryParse(_d) ?? 0;
           double r = 0;
           if (_op == '+') r = _f! + s;
-          if (_op == '−') r = _f! - s;
+          if (_op == '-') r = _f! - s;
           if (_op == '×') r = _f! * s;
           if (_op == '÷') r = s == 0 ? 0 : _f! / s;
           _d = r == r.truncateToDouble() ? r.toInt().toString() : r.toStringAsFixed(2);
@@ -257,7 +276,7 @@ class _CalcState extends State<Calculator> {
         }
         return;
       }
-      if ('+−×÷'.contains(v)) { _f = double.tryParse(_d); _op = v; _new = true; return; }
+      if ('+-×÷'.contains(v)) { _f = double.tryParse(_d); _op = v; _new = true; return; }
       if (_new) { _d = v; _new = false; }
       else { _d = _d == '0' ? v : _d + v; }
     });
@@ -298,7 +317,7 @@ class _CalcState extends State<Calculator> {
       Padding(
         padding: const EdgeInsets.all(12),
         child: Column(children: [
-          Row(children: [_b('C', const Color(0xFFEF5350), Colors.white), _b('÷', const Color(0xFF7C4DFF)), _b('×', const Color(0xFF7C4DFF)), _b('−', const Color(0xFF7C4DFF))]),
+          Row(children: [_b('C', const Color(0xFFEF5350), Colors.white), _b('÷', const Color(0xFF7C4DFF)), _b('×', const Color(0xFF7C4DFF)), _b('-', const Color(0xFF7C4DFF))]),
           Row(children: [_b('7'), _b('8'), _b('9'), _b('+', const Color(0xFF7C4DFF))]),
           Row(children: [_b('4'), _b('5'), _b('6'), _b('00')]),
           Row(children: [_b('1'), _b('2'), _b('3'), _b('=', const Color(0xFF00E5FF), Colors.black)]),
