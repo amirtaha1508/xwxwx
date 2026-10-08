@@ -9,11 +9,8 @@ void main() async {
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   } catch (e) {
-    runApp(MaterialApp(
-      home: Scaffold(
-        body: Center(child: Text('$e', style: const TextStyle(color: Colors.white))),
-      ),
-    ));
+    runApp(MaterialApp(home: Scaffold(body: Center(
+      child: Text('$e', style: const TextStyle(color: Colors.white))))));
     return;
   }
   runApp(const AdminApp());
@@ -127,13 +124,9 @@ class _AdminHomeState extends State<AdminHome> with SingleTickerProviderStateMix
         int blocked = 0;
         for (final d in docs) {
           final s = (d.data() as Map)['status'] ?? '';
-          if (s == 'active') {
-            active++;
-          } else if (s == 'blocked') {
-            blocked++;
-          } else {
-            pending++;
-          }
+          if (s == 'active') { active++; }
+          else if (s == 'blocked') { blocked++; }
+          else { pending++; }
         }
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -591,4 +584,6 @@ class _UserDetailState extends State<UserDetail> {
   }
 
   Widget _blockButton(String status) {
-   
+    if (status == 'blocked') {
+      return ElevatedButton.icon(
+       
