@@ -20,30 +20,9 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.0'
+          flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      - name: Pre-install NDK
-        run: |
-          NDK_VERSION="27.0.12077973"
-          NDK_DIR="$ANDROID_HOME/ndk/$NDK_VERSION"
-          if [ ! -d "$NDK_DIR" ]; then
-            mkdir -p "$ANDROID_HOME/ndk"
-            cd /tmp
-            for i in 1 2 3; do
-              echo "--- Download attempt $i ---"
-              if curl -fL -o ndk.zip "https://dl.google.com/android/repository/android-ndk-r27-linux.zip"; then
-                break
-              fi
-              sleep 5
-            done
-            unzip -q ndk.zip
-            mv android-ndk-r27 "$NDK_DIR"
-          fi
-          echo "NDK installed at: $NDK_DIR"
-          ls -la "$ANDROID_HOME/ndk/"
-          echo "ANDROID_NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
-          echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
       - name: Build
         run: |
           mkdir -p b_user && cd b_user
@@ -53,28 +32,13 @@ jobs:
           cp ../lib/firebase_options.dart lib/firebase_options.dart
           cp ../pubspec.yaml pubspec.yaml
           cd android
-          NDK_VERSION="27.0.12077973"
           for f in settings.gradle settings.gradle.kts build.gradle build.gradle.kts; do
             if [ -f "$f" ]; then
-              sed -i 's|org.jetbrains.kotlin.android" version ".*"|org.jetbrains.kotlin.android" version "2.0.21"|g' "$f"
-              sed -i "s|org.jetbrains.kotlin.android' version '.*'|org.jetbrains.kotlin.android' version '2.0.21'|g" "$f"
-              sed -i "s|ext.kotlin_version = .*|ext.kotlin_version = '2.0.21'|g" "$f"
+              sed -i 's|org.jetbrains.kotlin.android" version ".*"|org.jetbrains.kotlin.android" version "1.9.22"|g' "$f"
+              sed -i "s|org.jetbrains.kotlin.android' version '.*'|org.jetbrains.kotlin.android' version '1.9.22'|g" "$f"
+              sed -i "s|ext.kotlin_version = .*|ext.kotlin_version = '1.9.22'|g" "$f"
             fi
           done
-          if [ -f app/build.gradle.kts ]; then
-            if grep -q "ndkVersion" app/build.gradle.kts; then
-              sed -i "s|ndkVersion = .*|ndkVersion = \"$NDK_VERSION\"|" app/build.gradle.kts
-            else
-              sed -i "s|android {|android {\n    ndkVersion = \"$NDK_VERSION\"|" app/build.gradle.kts
-            fi
-          fi
-          if [ -f app/build.gradle ]; then
-            if grep -q "ndkVersion" app/build.gradle; then
-              sed -i "s|ndkVersion .*|ndkVersion \"$NDK_VERSION\"|" app/build.gradle
-            else
-              sed -i "s|android {|android {\n    ndkVersion \"$NDK_VERSION\"|" app/build.gradle
-            fi
-          fi
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.user_app/com.xwxwx.app/g' {} \;
           OLD="app/src/main/kotlin/com/xwxwx/user_app"
           NEW="app/src/main/kotlin/com/xwxwx/app"
@@ -108,30 +72,9 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.0'
+          flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      - name: Pre-install NDK
-        run: |
-          NDK_VERSION="27.0.12077973"
-          NDK_DIR="$ANDROID_HOME/ndk/$NDK_VERSION"
-          if [ ! -d "$NDK_DIR" ]; then
-            mkdir -p "$ANDROID_HOME/ndk"
-            cd /tmp
-            for i in 1 2 3; do
-              echo "--- Download attempt $i ---"
-              if curl -fL -o ndk.zip "https://dl.google.com/android/repository/android-ndk-r27-linux.zip"; then
-                break
-              fi
-              sleep 5
-            done
-            unzip -q ndk.zip
-            mv android-ndk-r27 "$NDK_DIR"
-          fi
-          echo "NDK installed at: $NDK_DIR"
-          ls -la "$ANDROID_HOME/ndk/"
-          echo "ANDROID_NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
-          echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
       - name: Build
         run: |
           mkdir -p b_admin && cd b_admin
@@ -141,28 +84,13 @@ jobs:
           cp ../lib/firebase_options.dart lib/firebase_options.dart
           cp ../pubspec.yaml pubspec.yaml
           cd android
-          NDK_VERSION="27.0.12077973"
           for f in settings.gradle settings.gradle.kts build.gradle build.gradle.kts; do
             if [ -f "$f" ]; then
-              sed -i 's|org.jetbrains.kotlin.android" version ".*"|org.jetbrains.kotlin.android" version "2.0.21"|g' "$f"
-              sed -i "s|org.jetbrains.kotlin.android' version '.*'|org.jetbrains.kotlin.android' version '2.0.21'|g" "$f"
-              sed -i "s|ext.kotlin_version = .*|ext.kotlin_version = '2.0.21'|g" "$f"
+              sed -i 's|org.jetbrains.kotlin.android" version ".*"|org.jetbrains.kotlin.android" version "1.9.22"|g' "$f"
+              sed -i "s|org.jetbrains.kotlin.android' version '.*'|org.jetbrains.kotlin.android' version '1.9.22'|g" "$f"
+              sed -i "s|ext.kotlin_version = .*|ext.kotlin_version = '1.9.22'|g" "$f"
             fi
           done
-          if [ -f app/build.gradle.kts ]; then
-            if grep -q "ndkVersion" app/build.gradle.kts; then
-              sed -i "s|ndkVersion = .*|ndkVersion = \"$NDK_VERSION\"|" app/build.gradle.kts
-            else
-              sed -i "s|android {|android {\n    ndkVersion = \"$NDK_VERSION\"|" app/build.gradle.kts
-            fi
-          fi
-          if [ -f app/build.gradle ]; then
-            if grep -q "ndkVersion" app/build.gradle; then
-              sed -i "s|ndkVersion .*|ndkVersion \"$NDK_VERSION\"|" app/build.gradle
-            else
-              sed -i "s|android {|android {\n    ndkVersion \"$NDK_VERSION\"|" app/build.gradle
-            fi
-          fi
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.admin_app/com.xwxwx.admin/g' {} \;
           OLD="app/src/main/kotlin/com/xwxwx/admin_app"
           NEW="app/src/main/kotlin/com/xwxwx/admin"
