@@ -22,15 +22,16 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.29.0'
           channel: 'stable'
           cache: true
 
       - name: Build User APK
         run: |
+          set -e
           mkdir -p b_user
           cd b_user
-          flutter create --org com.xwxwx --project-name user_app --platforms=android . 2>&1 | tail -2
+          flutter create --org com.xwxwx --project-name user_app --platforms=android . 2>&1 | tail -3
 
           rm -rf lib
           mkdir -p lib
@@ -40,23 +41,23 @@ jobs:
 
           cd android
 
-          # --- Fix Kotlin version (Groovy) ---
-          if [ -f build.gradle ]; then
-            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" build.gradle
-            if ! grep -q "kotlin_version" build.gradle; then
-              sed -i "s|buildscript {|buildscript {\n    ext.kotlin_version = '1.9.24'|" build.gradle
+          echo "=== Files ==="
+          ls -la
+
+          # Fix Kotlin version in ALL possible locations
+          for f in settings.gradle settings.gradle.kts build.gradle build.gradle.kts; do
+            if [ -f "$f" ]; then
+              echo "--- Before: $f ---"
+              grep -i "kotlin" "$f" | head -5 || true
+              sed -i 's|org.jetbrains.kotlin.android" version ".*"|org.jetbrains.kotlin.android" version "2.0.21"|g' "$f"
+              sed -i "s|org.jetbrains.kotlin.android' version '.*'|org.jetbrains.kotlin.android' version '2.0.21'|g" "$f"
+              sed -i "s|ext.kotlin_version = .*|ext.kotlin_version = '2.0.21'|g" "$f"
+              echo "--- After: $f ---"
+              grep -i "kotlin" "$f" | head -5 || true
             fi
-          fi
+          done
 
-          # --- Fix Kotlin version (KTS) ---
-          if [ -f settings.gradle.kts ]; then
-            sed -i 's|id("org.jetbrains.kotlin.android") version ".*"|id("org.jetbrains.kotlin.android") version "1.9.24"|' settings.gradle.kts
-          fi
-          if [ -f build.gradle.kts ]; then
-            sed -i 's|id("org.jetbrains.kotlin.android") version ".*"|id("org.jetbrains.kotlin.android") version "1.9.24"|' build.gradle.kts
-          fi
-
-          # --- Fix package name ---
+          # Fix package name
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.user_app/com.xwxwx.app/g' {} \;
 
           OLD="app/src/main/kotlin/com/xwxwx/user_app"
@@ -69,7 +70,7 @@ jobs:
             rm -rf "$OLD"
           fi
 
-          # --- Fix Manifest ---
+          # Fix Manifest
           MANIFEST="app/src/main/AndroidManifest.xml"
           if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
             sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
@@ -88,9 +89,10 @@ jobs:
 
       - name: Build Admin APK
         run: |
+          set -e
           mkdir -p b_admin
           cd b_admin
-          flutter create --org com.xwxwx --project-name admin_app --platforms=android . 2>&1 | tail -2
+          flutter create --org com.xwxwx --project-name admin_app --platforms=android . 2>&1 | tail -3
 
           rm -rf lib
           mkdir -p lib
@@ -100,23 +102,14 @@ jobs:
 
           cd android
 
-          # --- Fix Kotlin version (Groovy) ---
-          if [ -f build.gradle ]; then
-            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" build.gradle
-            if ! grep -q "kotlin_version" build.gradle; then
-              sed -i "s|buildscript {|buildscript {\n    ext.kotlin_version = '1.9.24'|" build.gradle
+          for f in settings.gradle settings.gradle.kts build.gradle build.gradle.kts; do
+            if [ -f "$f" ]; then
+              sed -i 's|org.jetbrains.kotlin.android" version ".*"|org.jetbrains.kotlin.android" version "2.0.21"|g' "$f"
+              sed -i "s|org.jetbrains.kotlin.android' version '.*'|org.jetbrains.kotlin.android' version '2.0.21'|g" "$f"
+              sed -i "s|ext.kotlin_version = .*|ext.kotlin_version = '2.0.21'|g" "$f"
             fi
-          fi
+          done
 
-          # --- Fix Kotlin version (KTS) ---
-          if [ -f settings.gradle.kts ]; then
-            sed -i 's|id("org.jetbrains.kotlin.android") version ".*"|id("org.jetbrains.kotlin.android") version "1.9.24"|' settings.gradle.kts
-          fi
-          if [ -f build.gradle.kts ]; then
-            sed -i 's|id("org.jetbrains.kotlin.android") version ".*"|id("org.jetbrains.kotlin.android") version "1.9.24"|' build.gradle.kts
-          fi
-
-          # --- Fix package name ---
           find . -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.kt" -o -name "*.xml" \) -exec sed -i 's/com\.xwxwx\.admin_app/com.xwxwx.admin/g' {} \;
 
           OLD="app/src/main/kotlin/com/xwxwx/admin_app"
@@ -129,7 +122,6 @@ jobs:
             rm -rf "$OLD"
           fi
 
-          # --- Fix Manifest ---
           MANIFEST="app/src/main/AndroidManifest.xml"
           if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
             sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
