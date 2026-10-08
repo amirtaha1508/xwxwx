@@ -51,8 +51,14 @@ jobs:
             rm -rf "$OLD"
           fi
 
-          sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' app/src/main/AndroidManifest.xml
-          sed -i 's|android:label="user_app"|android:label="XWXWX"|' app/src/main/AndroidManifest.xml
+          MANIFEST="app/src/main/AndroidManifest.xml"
+          if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
+            sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
+          fi
+          if ! grep -q "READ_MEDIA_IMAGES" "$MANIFEST"; then
+            sed -i 's|<application|<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>\n    <application|' "$MANIFEST"
+          fi
+          sed -i 's|android:label="user_app"|android:label="XWXWX"|' "$MANIFEST"
 
           cd ..
           flutter pub get
@@ -86,8 +92,11 @@ jobs:
             rm -rf "$OLD"
           fi
 
-          sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' app/src/main/AndroidManifest.xml
-          sed -i 's|android:label="admin_app"|android:label="XWXWX Admin"|' app/src/main/AndroidManifest.xml
+          MANIFEST="app/src/main/AndroidManifest.xml"
+          if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
+            sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
+          fi
+          sed -i 's|android:label="admin_app"|android:label="XWXWX Admin"|' "$MANIFEST"
 
           cd ..
           flutter pub get
