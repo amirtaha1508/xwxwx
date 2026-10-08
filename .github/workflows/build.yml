@@ -23,6 +23,27 @@ jobs:
           flutter-version: '3.29.0'
           channel: 'stable'
           cache: true
+      - name: Pre-install NDK
+        run: |
+          NDK_VERSION="27.0.12077973"
+          NDK_DIR="$ANDROID_HOME/ndk/$NDK_VERSION"
+          if [ ! -d "$NDK_DIR" ]; then
+            mkdir -p "$ANDROID_HOME/ndk"
+            cd /tmp
+            for i in 1 2 3; do
+              echo "--- Download attempt $i ---"
+              if curl -fL -o ndk.zip "https://dl.google.com/android/repository/android-ndk-r27-linux.zip"; then
+                break
+              fi
+              sleep 5
+            done
+            unzip -q ndk.zip
+            mv android-ndk-r27 "$NDK_DIR"
+          fi
+          echo "NDK installed at: $NDK_DIR"
+          ls -la "$ANDROID_HOME/ndk/"
+          echo "ANDROID_NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
       - name: Build
         run: |
           mkdir -p b_user && cd b_user
@@ -90,6 +111,27 @@ jobs:
           flutter-version: '3.29.0'
           channel: 'stable'
           cache: true
+      - name: Pre-install NDK
+        run: |
+          NDK_VERSION="27.0.12077973"
+          NDK_DIR="$ANDROID_HOME/ndk/$NDK_VERSION"
+          if [ ! -d "$NDK_DIR" ]; then
+            mkdir -p "$ANDROID_HOME/ndk"
+            cd /tmp
+            for i in 1 2 3; do
+              echo "--- Download attempt $i ---"
+              if curl -fL -o ndk.zip "https://dl.google.com/android/repository/android-ndk-r27-linux.zip"; then
+                break
+              fi
+              sleep 5
+            done
+            unzip -q ndk.zip
+            mv android-ndk-r27 "$NDK_DIR"
+          fi
+          echo "NDK installed at: $NDK_DIR"
+          ls -la "$ANDROID_HOME/ndk/"
+          echo "ANDROID_NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
       - name: Build
         run: |
           mkdir -p b_admin && cd b_admin
